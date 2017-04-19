@@ -1,5 +1,5 @@
-PyPdf
-=====
+PDF Maker [![Build Status](https://travis-ci.org/ramchale/pdf-maker.svg?branch=master)](https://travis-ci.org/ramchale/pdf-maker)
+=========
 
 A python library for creating PDFs
 
@@ -13,7 +13,7 @@ Basic Example
 --------------
 
 ```python
-from pypdf.pdf import Document, Page
+from pdf_maker.pdf import Document, Page
 
 document = Document()
 
@@ -30,7 +30,7 @@ Longer Example
 --------------------
 
 ```python
-from pypdf.pdf import Document, Page, PageSize
+from pdf_maker.pdf import Document, Page, PageSize
 document = Document()
 document.resolution = 72
 document.page_size = PageSize.A3.value
