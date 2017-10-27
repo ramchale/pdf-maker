@@ -1,7 +1,20 @@
 from datetime import datetime
 from enum import Enum
+import zlib
+import base64
 
 from pdf_maker.font import Font
+
+
+def decode_base64_and_inflate( b64string ):
+    decoded_data = base64.b64decode( b64string )
+    return zlib.decompress( decoded_data , -15)
+
+
+def deflate_and_base64_encode( string_val ):
+    zlibbed_str = zlib.compress( string_val )
+    compressed_string = zlibbed_str[2:-4]
+    return base64.b64encode( compressed_string )
 
 
 class PageSize(Enum):
@@ -119,7 +132,7 @@ class Content():
     def __init__(self, object_id):
         self.object_id = object_id
         self.instructions = []
-        self.encoding = Content.Encoding.PLAIN_TEXT
+        self.encoding = Content.Encoding.FLATE
 
     def __str__(self):
         instruction_text = ''
@@ -135,12 +148,31 @@ class Content():
                'endobj\n'.format(object_id=self.object_id, length=len(instruction_text), text=instruction_text)
 
     def __bytes__(self):
-        return str(self).encode()
+        if(self.encoding == Content.Encoding.PLAIN_TEXT):
+            return str(self).encode()
+        else:
+            instruction_text = ''
+
+            for i in self.instructions:
+                instruction_text += str(i)
+
+            res = zlib.compress(instruction_text.encode())
+
+            return '{object_id} 0 obj\n' \
+                   '  << /Length {length} \n' \
+                   '/Filter /FlateDecode \n' \
+                   '>>\n' \
+                   '  stream\n'.format(object_id=self.object_id, length=len(res)).encode() + \
+                   res + \
+                   '  endstream\n' \
+                   'endobj\n'.encode()
 
 
 class Page():
     def __init__(self, document, parent=None):
         self.document = document
+
+        self.document.pages.append(self)
 
         # use document if no parent specified
         self.parent = document if parent is None else parent
@@ -200,6 +232,7 @@ class Page():
         instruction = Text(text, font, font_size)
         instruction.text = text
         instruction.position = position
+        instruction.encoding = encoding
 
         self.content.instructions.append(instruction)
 
